@@ -2,19 +2,19 @@
 //  PlatedApp.swift
 //  Plated
 //
-//  Created by Anusha Garg on 12/14/25.
+//  Created by Claude on 12/14/2025.
 //
 
 import SwiftUI
 
 @main
 struct PlatedApp: App {
-    let persistenceController = PersistenceController.shared
+    @StateObject private var dataService = MockDataService()
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .environment(\.managedObjectContext, persistenceController.container.viewContext)
+            MainTabView()
+                .environmentObject(dataService)
         }
     }
 }
