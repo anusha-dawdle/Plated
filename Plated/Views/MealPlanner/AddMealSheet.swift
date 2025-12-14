@@ -75,10 +75,13 @@ struct AddMealSheet: View {
             }
         }
     }
+
 }
 
-#Preview {
-    AddMealSheet(selectedDate: .constant(Date())) { meal in
-        print("Added meal: \(meal.name) with tags: \(meal.tags)")
+struct AddMealSheet_Previews: PreviewProvider {
+    static var previews: some View {
+        AddMealSheet(selectedDate: .constant(Date())) { meal in
+            print("Added meal: \(meal.name) with tags: \(meal.tags)")
+        }
     }
 }

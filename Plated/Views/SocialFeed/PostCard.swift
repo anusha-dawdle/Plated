@@ -114,7 +114,7 @@ struct PostCard: View {
     ScrollView {
         PostCard(
             post: SocialPost(
-                author: User(name: "Sarah", profileImage: "person.circle.fill"),
+                author: User(name: "Sarah", profileImageUrl: "person.circle.fill"),
                 imageData: nil,
                 caption: "Homemade pizza night!",
                 mealTag: .dinner,

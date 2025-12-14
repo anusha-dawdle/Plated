@@ -7,7 +7,7 @@
 
 import Foundation
 
-enum MealTag: String, Codable, CaseIterable {
+enum MealTag: String, Codable, CaseIterable, Hashable {
     case breakfast = "Breakfast"
     case lunch = "Lunch"
     case dinner = "Dinner"

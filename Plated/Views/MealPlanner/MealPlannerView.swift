@@ -114,7 +114,9 @@ struct MealPlannerView: View {
     }
 }
 
-#Preview {
-    MealPlannerView()
-        .environmentObject(MockDataService())
+struct MealPlannerView_Previews: PreviewProvider {
+    static var previews: some View {
+        MealPlannerView()
+            .environmentObject(MockDataService())
+    }
 }

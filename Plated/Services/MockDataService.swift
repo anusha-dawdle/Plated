@@ -17,13 +17,13 @@ class MockDataService: ObservableObject {
 
     init() {
         // Create sample users
-        self.currentUser = User(name: "You", profileImage: "person.circle.fill")
+        self.currentUser = User(name: "You", profileImageUrl: "person.circle.fill")
         self.users = [
             currentUser,
-            User(name: "Sarah", profileImage: "person.circle.fill"),
-            User(name: "Mom", profileImage: "person.circle.fill"),
-            User(name: "Alex", profileImage: "person.circle.fill"),
-            User(name: "Jamie", profileImage: "person.circle.fill")
+            User(name: "Sarah", profileImageUrl: "person.circle.fill"),
+            User(name: "Mom", profileImageUrl: "person.circle.fill"),
+            User(name: "Alex", profileImageUrl: "person.circle.fill"),
+            User(name: "Jamie", profileImageUrl: "person.circle.fill")
         ]
 
         // Create sample meal plans
