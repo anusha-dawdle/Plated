@@ -28,9 +28,15 @@ struct MealItemRow: View {
                     .strikethrough(meal.isCompleted)
                     .foregroundStyle(meal.isCompleted ? .secondary : .primary)
 
-                // Show all tags
+                // Show all tags in order: Breakfast, Lunch, Dinner, Snack
                 HStack(spacing: 6) {
-                    ForEach(meal.tags, id: \.self) { tag in
+                    ForEach(meal.tags.sorted(by: { tag1, tag2 in
+                        guard let index1 = MealTag.allCases.firstIndex(of: tag1),
+                              let index2 = MealTag.allCases.firstIndex(of: tag2) else {
+                            return false
+                        }
+                        return index1 < index2
+                    }), id: \.self) { tag in
                         HStack(spacing: 3) {
                             Image(systemName: tag.icon)
                                 .font(.caption2)
