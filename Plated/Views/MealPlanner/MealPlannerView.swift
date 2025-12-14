@@ -27,10 +27,13 @@ struct MealPlannerView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                // Date picker
-                DatePicker("Select date", selection: $selectedDate, displayedComponents: .date)
-                    .datePickerStyle(.graphical)
-                    .padding()
+                // Date picker - minimalistic
+                DatePicker("", selection: $selectedDate, displayedComponents: .date)
+                    .datePickerStyle(.compact)
+                    .labelsHidden()
+                    .padding(.horizontal)
+                    .padding(.vertical, 12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .background(Color(.systemGroupedBackground))
 
                 // Meals list
