@@ -104,19 +104,19 @@ class MockDataService: ObservableObject {
 
         // Today's meals
         let todayMeals = [
-            MealItem(name: "Oatmeal with berries", tag: .breakfast, isCompleted: true),
-            MealItem(name: "Grilled chicken salad", tag: .lunch),
-            MealItem(name: "Salmon with roasted vegetables", tag: .dinner),
-            MealItem(name: "Apple slices with almond butter", tag: .snack)
+            MealItem(name: "Oatmeal with berries", tags: [.breakfast], isCompleted: true),
+            MealItem(name: "Grilled chicken salad", tags: [.lunch]),
+            MealItem(name: "Salmon with roasted vegetables", tags: [.dinner]),
+            MealItem(name: "Apple slices with almond butter", tags: [.snack])
         ]
         plans.append(MealPlan(date: today, meals: todayMeals))
 
         // Tomorrow's meals
         if let tomorrow = calendar.date(byAdding: .day, value: 1, to: today) {
             let tomorrowMeals = [
-                MealItem(name: "Greek yogurt parfait", tag: .breakfast),
-                MealItem(name: "Turkey wrap", tag: .lunch),
-                MealItem(name: "Pasta primavera", tag: .dinner)
+                MealItem(name: "Greek yogurt parfait", tags: [.breakfast]),
+                MealItem(name: "Turkey wrap", tags: [.lunch]),
+                MealItem(name: "Pasta primavera", tags: [.dinner])
             ]
             plans.append(MealPlan(date: tomorrow, meals: tomorrowMeals))
         }

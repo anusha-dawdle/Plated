@@ -17,9 +17,21 @@ struct MealPlannerView: View {
     }
 
     private var groupedMeals: [(MealTag, [MealItem])] {
-        let grouped = Dictionary(grouping: mealsForSelectedDate) { $0.tag }
+        // Create groups for each tag, including meals that have multiple tags
+        var groups: [MealTag: [MealItem]] = [:]
+
+        for meal in mealsForSelectedDate {
+            for tag in meal.tags {
+                if groups[tag] == nil {
+                    groups[tag] = []
+                }
+                groups[tag]?.append(meal)
+            }
+        }
+
+        // Return in the order of MealTag.allCases
         return MealTag.allCases.compactMap { tag in
-            guard let meals = grouped[tag], !meals.isEmpty else { return nil }
+            guard let meals = groups[tag], !meals.isEmpty else { return nil }
             return (tag, meals)
         }
     }

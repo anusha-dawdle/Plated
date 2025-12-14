@@ -28,13 +28,22 @@ struct MealItemRow: View {
                     .strikethrough(meal.isCompleted)
                     .foregroundStyle(meal.isCompleted ? .secondary : .primary)
 
-                HStack(spacing: 4) {
-                    Image(systemName: meal.tag.icon)
-                        .font(.caption)
-                    Text(meal.tag.rawValue)
-                        .font(.caption)
+                // Show all tags
+                HStack(spacing: 6) {
+                    ForEach(meal.tags, id: \.self) { tag in
+                        HStack(spacing: 3) {
+                            Image(systemName: tag.icon)
+                                .font(.caption2)
+                            Text(tag.rawValue)
+                                .font(.caption2)
+                        }
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.blue.opacity(0.1))
+                        .foregroundStyle(.blue)
+                        .clipShape(Capsule())
+                    }
                 }
-                .foregroundStyle(.secondary)
             }
 
             Spacer()
@@ -45,7 +54,8 @@ struct MealItemRow: View {
 
 #Preview {
     List {
-        MealItemRow(meal: MealItem(name: "Oatmeal with berries", tag: .breakfast, isCompleted: false)) {}
-        MealItemRow(meal: MealItem(name: "Grilled chicken salad", tag: .lunch, isCompleted: true)) {}
+        MealItemRow(meal: MealItem(name: "Oatmeal with berries", tags: [.breakfast], isCompleted: false)) {}
+        MealItemRow(meal: MealItem(name: "Grilled chicken salad", tags: [.lunch], isCompleted: true)) {}
+        MealItemRow(meal: MealItem(name: "Brunch special", tags: [.breakfast, .lunch], isCompleted: false)) {}
     }
 }

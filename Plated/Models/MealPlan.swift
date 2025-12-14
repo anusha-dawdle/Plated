@@ -22,14 +22,14 @@ struct MealPlan: Identifiable, Codable {
 struct MealItem: Identifiable, Codable {
     let id: UUID
     var name: String
-    var tag: MealTag
+    var tags: [MealTag]
     var isCompleted: Bool
     var createdAt: Date
 
-    init(id: UUID = UUID(), name: String, tag: MealTag, isCompleted: Bool = false, createdAt: Date = Date()) {
+    init(id: UUID = UUID(), name: String, tags: [MealTag], isCompleted: Bool = false, createdAt: Date = Date()) {
         self.id = id
         self.name = name
-        self.tag = tag
+        self.tags = tags
         self.isCompleted = isCompleted
         self.createdAt = createdAt
     }
