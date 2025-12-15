@@ -15,6 +15,7 @@ class FirebaseDataService: ObservableObject {
     // MARK: - Published Properties
     @Published var mealPlans: [MealPlan] = []
     @Published var socialPosts: [SocialPost] = []
+    @Published var followRequests: [FollowRequest] = []
     @Published var isLoading = false
     @Published var error: String?
 
@@ -26,6 +27,7 @@ class FirebaseDataService: ObservableObject {
     // MARK: - Listeners
     private var mealPlansListener: ListenerRegistration?
     private var socialFeedListener: ListenerRegistration?
+    private var followRequestsListener: ListenerRegistration?
 
     // MARK: - Optimistic Update Tracking
     private var lastOptimisticUpdateTime: Date?
@@ -43,6 +45,7 @@ class FirebaseDataService: ObservableObject {
     deinit {
         mealPlansListener?.remove()
         socialFeedListener?.remove()
+        followRequestsListener?.remove()
     }
 
     // MARK: - Lifecycle Methods
@@ -55,6 +58,9 @@ class FirebaseDataService: ObservableObject {
 
         // Listen to social feed
         await startSocialFeedListener()
+
+        // Listen to follow requests
+        startFollowRequestsListener(userId: userId)
     }
 
     // MARK: - Meal Planning Methods
@@ -205,6 +211,129 @@ class FirebaseDataService: ObservableObject {
         ])
     }
 
+    // MARK: - Follow System Methods
+
+    func sendFollowRequest(to targetUser: User) async throws {
+        guard let currentUser = auth.currentUser,
+              let fromUser = try? await getUser(userId: currentUser.uid) else {
+            throw FirebaseDataError.notAuthenticated
+        }
+
+        // Check if request already exists
+        let existingRequests = try await db.collection("followRequests")
+            .whereField("fromUserId", isEqualTo: currentUser.uid)
+            .whereField("toUserId", isEqualTo: targetUser.id.uuidString)
+            .whereField("status", isEqualTo: FollowRequestStatus.pending.rawValue)
+            .getDocuments()
+
+        guard existingRequests.documents.isEmpty else {
+            return // Request already exists
+        }
+
+        let request = FollowRequest(
+            fromUserId: currentUser.uid,
+            fromUserName: fromUser.name,
+            fromUserUsername: fromUser.username,
+            fromUserProfileImageUrl: fromUser.profileImageUrl,
+            toUserId: targetUser.id.uuidString
+        )
+
+        try db.collection("followRequests").document(request.id.uuidString).setData(from: request)
+    }
+
+    func acceptFollowRequest(_ request: FollowRequest) async throws {
+        guard let userId = currentUserId else {
+            throw FirebaseDataError.notAuthenticated
+        }
+
+        // Update request status
+        try await db.collection("followRequests").document(request.id.uuidString).updateData([
+            "status": FollowRequestStatus.accepted.rawValue
+        ])
+
+        // Update both users' following/followers lists
+        let fromUserRef = db.collection("users").document(request.fromUserId)
+        let toUserRef = db.collection("users").document(request.toUserId)
+
+        try await fromUserRef.updateData([
+            "following": FieldValue.arrayUnion([request.toUserId])
+        ])
+
+        try await toUserRef.updateData([
+            "followers": FieldValue.arrayUnion([request.fromUserId])
+        ])
+    }
+
+    func rejectFollowRequest(_ request: FollowRequest) async throws {
+        try await db.collection("followRequests").document(request.id.uuidString).updateData([
+            "status": FollowRequestStatus.rejected.rawValue
+        ])
+    }
+
+    func unfollowUser(_ userId: String) async throws {
+        guard let currentUserId = currentUserId else {
+            throw FirebaseDataError.notAuthenticated
+        }
+
+        let currentUserRef = db.collection("users").document(currentUserId)
+        let targetUserRef = db.collection("users").document(userId)
+
+        try await currentUserRef.updateData([
+            "following": FieldValue.arrayRemove([userId])
+        ])
+
+        try await targetUserRef.updateData([
+            "followers": FieldValue.arrayRemove([currentUserId])
+        ])
+    }
+
+    func getFollowStatus(for userId: String) async throws -> FollowStatus {
+        guard let currentUserId = currentUserId else {
+            throw FirebaseDataError.notAuthenticated
+        }
+
+        if currentUserId == userId {
+            return .yourself
+        }
+
+        // Check if already following
+        let currentUser = try await getUser(userId: currentUserId)
+        if currentUser.following.contains(userId) {
+            return .following
+        }
+
+        // Check for pending request
+        let pendingRequests = try await db.collection("followRequests")
+            .whereField("fromUserId", isEqualTo: currentUserId)
+            .whereField("toUserId", isEqualTo: userId)
+            .whereField("status", isEqualTo: FollowRequestStatus.pending.rawValue)
+            .getDocuments()
+
+        if !pendingRequests.documents.isEmpty {
+            return .pending
+        }
+
+        return .notFollowing
+    }
+
+    func searchUsers(query: String) async throws -> [User] {
+        let snapshot = try await db.collection("users")
+            .whereField("username", isGreaterThanOrEqualTo: query.lowercased())
+            .whereField("username", isLessThanOrEqualTo: query.lowercased() + "\u{f8ff}")
+            .limit(to: 20)
+            .getDocuments()
+
+        return snapshot.documents.compactMap { try? $0.data(as: User.self) }
+    }
+
+    func getUser(userId: String) async throws -> User {
+        let document = try await db.collection("users").document(userId).getDocument()
+        guard let user = try? document.data(as: User.self) else {
+            throw FirebaseDataError.invalidData
+        }
+        return user
+    }
+
     // MARK: - Real-time Listeners
 
     private func startMealPlansListener(userId: String) {
@@ -233,9 +362,26 @@ class FirebaseDataService: ObservableObject {
     }
 
     private func startSocialFeedListener() async {
-        // For now, fetch all public posts
-        // TODO: Filter by following list in user management phase
+        guard let userId = currentUserId else { return }
+
+        // Get current user to access following list
+        guard let currentUser = try? await getUser(userId: userId) else { return }
+
+        // Create list of user IDs to show posts from: yourself + people you follow
+        var authorIds = currentUser.following
+        authorIds.append(userId)
+
+        // If not following anyone yet, only show own posts
+        if authorIds.isEmpty {
+            authorIds = [userId]
+        }
+
+        // Firestore 'in' queries are limited to 10 items, so we need to handle larger following lists
+        // For now, limit to first 10 (including self)
+        let limitedAuthorIds = Array(authorIds.prefix(10))
+
         socialFeedListener = db.collection("socialPosts")
+            .whereField("authorId", in: limitedAuthorIds)
             .order(by: "createdAt", descending: true)
             .limit(to: 50)
             .addSnapshotListener { [weak self] snapshot, error in
@@ -250,6 +396,28 @@ class FirebaseDataService: ObservableObject {
 
                 self.socialPosts = documents.compactMap { document in
                     try? document.data(as: SocialPost.self)
+                }
+            }
+    }
+
+    private func startFollowRequestsListener(userId: String) {
+        // Listen to follow requests where current user is the recipient
+        followRequestsListener = db.collection("followRequests")
+            .whereField("toUserId", isEqualTo: userId)
+            .whereField("status", isEqualTo: FollowRequestStatus.pending.rawValue)
+            .order(by: "createdAt", descending: true)
+            .addSnapshotListener { [weak self] snapshot, error in
+                guard let self = self else { return }
+
+                if let error = error {
+                    self.error = error.localizedDescription
+                    return
+                }
+
+                guard let documents = snapshot?.documents else { return }
+
+                self.followRequests = documents.compactMap { document in
+                    try? document.data(as: FollowRequest.self)
                 }
             }
     }
@@ -272,4 +440,11 @@ enum FirebaseDataError: LocalizedError {
             return "Failed to upload data"
         }
     }
+}
+
+enum FollowStatus {
+    case yourself
+    case following
+    case pending
+    case notFollowing
 }

@@ -22,6 +22,11 @@ struct MainTabView: View {
                     Label("Planner", systemImage: "checklist")
                 }
 
+            ProfileView()
+                .tabItem {
+                    Label("Profile", systemImage: "person.circle")
+                }
+
             SettingsView()
                 .tabItem {
                     Label("Settings", systemImage: "gearshape")

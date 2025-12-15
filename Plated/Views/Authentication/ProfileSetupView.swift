@@ -13,6 +13,7 @@ struct ProfileSetupView: View {
     @Environment(\.dismiss) var dismiss
 
     @State private var displayName: String = ""
+    @State private var username: String = ""
     @State private var selectedImage: PhotosPickerItem?
     @State private var profileImage: UIImage?
     @State private var isUploading = false
@@ -28,7 +29,7 @@ struct ProfileSetupView: View {
                         Text("Complete Your Profile")
                             .font(.largeTitle.bold())
 
-                        Text("Add a profile picture and display name")
+                        Text("Add a profile picture, name, and username")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
@@ -78,6 +79,31 @@ struct ProfileSetupView: View {
                         TextField("Enter your name", text: $displayName)
                             .textFieldStyle(.roundedBorder)
                             .font(.body)
+                            .textContentType(.name)
+                            .autocorrectionDisabled()
+                    }
+                    .padding(.horizontal)
+
+                    // Username
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Username")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.secondary)
+
+                        TextField("Choose a unique username", text: $username)
+                            .textFieldStyle(.roundedBorder)
+                            .font(.body)
+                            .textContentType(.username)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                            .onChange(of: username) { _, newValue in
+                                // Convert to lowercase
+                                username = newValue.lowercased()
+                            }
+
+                        Text("Usernames can only contain letters, numbers, and underscores")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
                     .padding(.horizontal)
 
@@ -98,11 +124,11 @@ struct ProfileSetupView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .frame(height: 50)
-                    .background(displayName.isEmpty ? Color.gray : Color.blue)
+                    .background((displayName.isEmpty || username.isEmpty) ? Color.gray : Color.blue)
                     .foregroundStyle(.white)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     .padding(.horizontal)
-                    .disabled(displayName.isEmpty || isUploading)
+                    .disabled(displayName.isEmpty || username.isEmpty || isUploading)
                     .padding(.bottom, 20)
                 }
             }
@@ -128,12 +154,27 @@ struct ProfileSetupView: View {
     }
 
     private func completeSetup() {
+        // Validate username format
+        let usernamePattern = "^[a-z0-9_]+$"
+        let usernameTest = NSPredicate(format: "SELF MATCHES %@", usernamePattern)
+        guard usernameTest.evaluate(with: username) else {
+            errorMessage = "Username can only contain lowercase letters, numbers, and underscores"
+            showError = true
+            return
+        }
+
+        guard username.count >= 3 else {
+            errorMessage = "Username must be at least 3 characters long"
+            showError = true
+            return
+        }
+
         isUploading = true
 
         Task {
             do {
                 // Update user profile (handles image upload internally)
-                try await authService.updateProfile(name: displayName, profileImage: profileImage)
+                try await authService.updateProfile(name: displayName, username: username, profileImage: profileImage)
 
                 isUploading = false
             } catch {

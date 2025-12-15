@@ -9,6 +9,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @EnvironmentObject var authService: AuthenticationService
+    @EnvironmentObject var dataService: FirebaseDataService
     @State private var showSignOutAlert = false
     @State private var showError = false
     @State private var errorMessage = ""
@@ -43,12 +44,31 @@ struct SettingsView: View {
                             Text(authService.currentUser?.name ?? "User")
                                 .font(.headline)
 
-                            Text(authService.currentUser?.email ?? "")
+                            Text("@\(authService.currentUser?.username ?? "")")
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                         }
                     }
                     .padding(.vertical, 8)
+                }
+
+                // Social Section
+                Section("Social") {
+                    NavigationLink(destination: FollowRequestsView()) {
+                        HStack {
+                            Label("Follow Requests", systemImage: "person.2")
+                            Spacer()
+                            if !dataService.followRequests.isEmpty {
+                                Text("\(dataService.followRequests.count)")
+                                    .font(.caption)
+                                    .foregroundStyle(.white)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 2)
+                                    .background(Color.red)
+                                    .clipShape(Capsule())
+                            }
+                        }
+                    }
                 }
 
                 // Account Section
@@ -90,4 +110,5 @@ struct SettingsView: View {
 #Preview {
     SettingsView()
         .environmentObject(AuthenticationService())
+        .environmentObject(FirebaseDataService())
 }

@@ -94,10 +94,12 @@ class AuthenticationService: ObservableObject {
                 // Returning user, no need for profile setup
                 self.needsProfileSetup = false
             } else {
-                // New user, create profile
+                // New user, create profile with temporary username
+                // User will need to set a proper username during profile setup
                 let newUser = User(
                     id: UUID(uuidString: userId) ?? UUID(),
                     name: googleUser.profile?.name ?? "User",
+                    username: "", // Will be set during profile setup
                     email: googleUser.profile?.email ?? "",
                     profileImageUrl: googleUser.profile?.imageURL(withDimension: 200)?.absoluteString,
                     followers: [],
@@ -109,6 +111,7 @@ class AuthenticationService: ObservableObject {
                 try await userRef.setData([
                     "id": userId,
                     "name": newUser.name,
+                    "username": "",
                     "email": newUser.email,
                     "profileImageUrl": newUser.profileImageUrl ?? "",
                     "followers": [],
@@ -152,7 +155,7 @@ class AuthenticationService: ObservableObject {
         }
     }
 
-    func updateProfile(name: String, profileImage: UIImage?) async throws {
+    func updateProfile(name: String, username: String, profileImage: UIImage?) async throws {
         guard let userId = auth.currentUser?.uid else {
             throw AuthError.noCurrentUser
         }
@@ -160,6 +163,17 @@ class AuthenticationService: ObservableObject {
         let userRef = db.collection("users").document(userId)
 
         do {
+            // Check username uniqueness
+            let usernameQuery = try await db.collection("users")
+                .whereField("username", isEqualTo: username.lowercased())
+                .getDocuments()
+
+            // If username exists and belongs to a different user, throw error
+            if let existingDoc = usernameQuery.documents.first,
+               existingDoc.documentID != userId {
+                throw AuthError.usernameAlreadyTaken
+            }
+
             // Upload profile image if provided
             var profileImageUrl: String? = currentUser?.profileImageUrl
 
@@ -171,12 +185,14 @@ class AuthenticationService: ObservableObject {
             // Update Firestore
             try await userRef.updateData([
                 "name": name,
+                "username": username.lowercased(),
                 "profileImageUrl": profileImageUrl ?? ""
             ])
 
             // Update local state
             if var updatedUser = currentUser {
                 updatedUser.name = name
+                updatedUser.username = username.lowercased()
                 updatedUser.profileImageUrl = profileImageUrl
                 self.currentUser = updatedUser
             }
@@ -207,6 +223,7 @@ enum AuthError: LocalizedError {
     case noRootViewController
     case missingIDToken
     case noCurrentUser
+    case usernameAlreadyTaken
 
     var errorDescription: String? {
         switch self {
@@ -218,6 +235,8 @@ enum AuthError: LocalizedError {
             return "Missing Google ID token"
         case .noCurrentUser:
             return "No authenticated user found"
+        case .usernameAlreadyTaken:
+            return "This username is already taken. Please choose another one."
         }
     }
 }
