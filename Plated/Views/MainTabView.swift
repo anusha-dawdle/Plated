@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct MainTabView: View {
+    @EnvironmentObject var dataService: FirebaseDataService
+
     var body: some View {
         TabView {
             SocialFeedView()
@@ -25,10 +27,18 @@ struct MainTabView: View {
                     Label("Settings", systemImage: "gearshape")
                 }
         }
+        .task {
+            // Start listening for data when view appears
+            await dataService.startListening()
+        }
     }
 }
 
 #Preview {
-    MainTabView()
-        .environmentObject(MockDataService())
+    let authService = AuthenticationService()
+    let dataService = FirebaseDataService()
+
+    return MainTabView()
+        .environmentObject(authService)
+        .environmentObject(dataService)
 }

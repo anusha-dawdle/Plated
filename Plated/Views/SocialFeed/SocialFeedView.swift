@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct SocialFeedView: View {
-    @EnvironmentObject var dataService: MockDataService
+    @EnvironmentObject var dataService: FirebaseDataService
     @EnvironmentObject var authService: AuthenticationService
     @State private var showingCreatePost = false
     @State private var selectedPost: SocialPost?
@@ -24,12 +24,16 @@ struct SocialFeedView: View {
                             ForEach(dataService.socialPosts) { post in
                                 PostCard(
                                     post: post,
-                                    currentUser: authService.currentUser ?? dataService.currentUser,
+                                    currentUser: authService.currentUser ?? User(name: "User", email: "user@example.com"),
                                     onReact: { emoji in
-                                        dataService.addReaction(emoji: emoji, to: post, by: authService.currentUser ?? dataService.currentUser)
+                                        Task {
+                                            try? await dataService.addReaction(emoji: emoji, to: post)
+                                        }
                                     },
                                     onRemoveReaction: {
-                                        dataService.removeReaction(from: post, by: authService.currentUser ?? dataService.currentUser)
+                                        Task {
+                                            try? await dataService.removeReaction(from: post)
+                                        }
                                     },
                                     onShowComments: {
                                         selectedPost = post
@@ -62,7 +66,9 @@ struct SocialFeedView: View {
                         post: post,
                         currentUser: currentUser,
                         onAddComment: { text in
-                            dataService.addComment(text, to: post, by: currentUser)
+                            Task {
+                                try? await dataService.addComment(text, to: post, userName: currentUser.name, userProfileImageUrl: currentUser.profileImageUrl)
+                            }
                         }
                     )
                     .environmentObject(dataService)

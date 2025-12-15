@@ -8,12 +8,12 @@
 import SwiftUI
 
 struct MealPlannerView: View {
-    @EnvironmentObject var dataService: MockDataService
+    @EnvironmentObject var dataService: FirebaseDataService
     @State private var selectedDate = Date()
     @State private var showingAddMeal = false
 
     private var mealsForSelectedDate: [MealItem] {
-        dataService.getMealPlan(for: selectedDate).meals
+        dataService.getMealPlan(for: selectedDate)?.meals ?? []
     }
 
     private var groupedMeals: [(MealTag, [MealItem])] {
@@ -57,12 +57,16 @@ struct MealPlannerView: View {
                             Section {
                                 ForEach(meals) { meal in
                                     MealItemRow(meal: meal) {
-                                        dataService.toggleMealCompletion(meal, on: selectedDate)
+                                        Task {
+                                            try? await dataService.toggleMealCompletion(meal, on: selectedDate)
+                                        }
                                     }
                                 }
                                 .onDelete { indexSet in
                                     for index in indexSet {
-                                        dataService.deleteMeal(meals[index], from: selectedDate)
+                                        Task {
+                                            try? await dataService.deleteMeal(meals[index], from: selectedDate)
+                                        }
                                     }
                                 }
                             } header: {
@@ -90,7 +94,9 @@ struct MealPlannerView: View {
             }
             .sheet(isPresented: $showingAddMeal) {
                 AddMealSheet(selectedDate: $selectedDate) { meal in
-                    dataService.addMeal(meal, to: selectedDate)
+                    Task {
+                        try? await dataService.addMeal(meal, to: selectedDate)
+                    }
                 }
             }
         }

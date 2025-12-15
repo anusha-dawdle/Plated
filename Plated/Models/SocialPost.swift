@@ -51,13 +51,15 @@ struct Comment: Identifiable, Codable {
     let id: UUID
     var userId: String
     var userName: String // Denormalized for performance
+    var userProfileImageUrl: String? // Denormalized for performance
     var text: String
     var createdAt: Date
 
-    init(id: UUID = UUID(), userId: String, userName: String, text: String, createdAt: Date = Date()) {
+    init(id: UUID = UUID(), userId: String, userName: String, userProfileImageUrl: String? = nil, text: String, createdAt: Date = Date()) {
         self.id = id
         self.userId = userId
         self.userName = userName
+        self.userProfileImageUrl = userProfileImageUrl
         self.text = text
         self.createdAt = createdAt
     }

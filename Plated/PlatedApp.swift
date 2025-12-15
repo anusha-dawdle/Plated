@@ -11,7 +11,7 @@ import FirebaseCore
 @main
 struct PlatedApp: App {
     @StateObject private var authService = AuthenticationService()
-    @StateObject private var dataService = MockDataService()
+    @StateObject private var dataService = FirebaseDataService()
 
     init() {
         // Configure Firebase

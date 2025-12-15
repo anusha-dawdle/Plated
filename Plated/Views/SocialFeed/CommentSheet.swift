@@ -9,7 +9,7 @@ import SwiftUI
 
 struct CommentSheet: View {
     @Environment(\.dismiss) var dismiss
-    @EnvironmentObject var dataService: MockDataService
+    @EnvironmentObject var dataService: FirebaseDataService
     let post: SocialPost
     let currentUser: User
     let onAddComment: (String) -> Void
@@ -43,9 +43,20 @@ struct CommentSheet: View {
 
                 // Input field
                 HStack(spacing: 12) {
-                    Image(systemName: "person.circle.fill")
-                        .font(.title2)
-                        .foregroundStyle(.secondary)
+                    // Show current user's profile image
+                    if let profileImageUrl = currentUser.profileImageUrl {
+                        AsyncImage(url: URL(string: profileImageUrl)) { image in
+                            image.resizable().scaledToFill()
+                        } placeholder: {
+                            Image(systemName: "person.circle.fill")
+                        }
+                        .frame(width: 32, height: 32)
+                        .clipShape(Circle())
+                    } else {
+                        Image(systemName: "person.circle.fill")
+                            .font(.title2)
+                            .foregroundStyle(.secondary)
+                    }
 
                     TextField("Add a comment...", text: $newCommentText, axis: .vertical)
                         .lineLimit(1...4)
@@ -97,9 +108,22 @@ struct CommentRow: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
-            Image(systemName: "person.circle.fill")
-                .font(.title2)
-                .foregroundStyle(.secondary)
+            // Show comment author's profile image
+            if let profileImageUrl = comment.userProfileImageUrl {
+                AsyncImage(url: URL(string: profileImageUrl)) { image in
+                    image.resizable().scaledToFill()
+                } placeholder: {
+                    Image(systemName: "person.circle.fill")
+                        .font(.title2)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(width: 32, height: 32)
+                .clipShape(Circle())
+            } else {
+                Image(systemName: "person.circle.fill")
+                    .font(.title2)
+                    .foregroundStyle(.secondary)
+            }
 
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 8) {
@@ -135,5 +159,5 @@ struct CommentRow: View {
         currentUser: User(name: "You", email: "you@example.com"),
         onAddComment: { _ in }
     )
-    .environmentObject(MockDataService())
+    .environmentObject(FirebaseDataService())
 }

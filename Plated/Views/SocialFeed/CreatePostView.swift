@@ -10,7 +10,8 @@ import PhotosUI
 
 struct CreatePostView: View {
     @Environment(\.dismiss) var dismiss
-    @EnvironmentObject var dataService: MockDataService
+    @EnvironmentObject var dataService: FirebaseDataService
+    @EnvironmentObject var authService: AuthenticationService
 
     @State private var selectedImage: UIImage?
     @State private var selectedPhotoItem: PhotosPickerItem?
@@ -19,6 +20,7 @@ struct CreatePostView: View {
     @State private var showingSourceChoice = false
     @State private var showingCamera = false
     @State private var showingPhotoPicker = false
+    @State private var isUploading = false
 
     var body: some View {
         NavigationStack {
@@ -81,10 +83,14 @@ struct CreatePostView: View {
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Post") {
-                        createPost()
+                    if isUploading {
+                        ProgressView()
+                    } else {
+                        Button("Post") {
+                            createPost()
+                        }
+                        .disabled(selectedImage == nil || caption.trimmingCharacters(in: .whitespaces).isEmpty)
                     }
-                    .disabled(selectedImage == nil || caption.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }
             .confirmationDialog("Choose photo source", isPresented: $showingSourceChoice) {
@@ -112,25 +118,36 @@ struct CreatePostView: View {
     }
 
     private func createPost() {
-        guard let image = selectedImage else { return }
+        guard let image = selectedImage,
+              let currentUser = authService.currentUser else { return }
 
-        // Note: Image upload to Firebase Storage will be implemented in Phase 5
-        // For now, imageUrl is nil in mock data
-        let post = SocialPost(
-            authorId: dataService.currentUser.id.uuidString,
-            authorName: dataService.currentUser.name,
-            authorProfileImageUrl: dataService.currentUser.profileImageUrl,
-            imageUrl: nil, // Will be set after Firebase Storage upload in Phase 5
-            caption: caption,
-            mealTag: selectedTag
-        )
+        isUploading = true
 
-        dataService.addPost(post)
-        dismiss()
+        Task {
+            do {
+                let post = SocialPost(
+                    authorId: currentUser.id.uuidString,
+                    authorName: currentUser.name,
+                    authorProfileImageUrl: currentUser.profileImageUrl,
+                    imageUrl: nil, // Will be set during upload
+                    caption: caption,
+                    mealTag: selectedTag
+                )
+
+                try await dataService.addPost(post, image: image)
+
+                isUploading = false
+                dismiss()
+            } catch {
+                isUploading = false
+                print("Error creating post: \(error.localizedDescription)")
+            }
+        }
     }
 }
 
 #Preview {
     CreatePostView()
-        .environmentObject(MockDataService())
+        .environmentObject(FirebaseDataService())
+        .environmentObject(AuthenticationService())
 }
