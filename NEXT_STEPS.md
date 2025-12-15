@@ -1,6 +1,141 @@
 # Next Steps for Plated
 
-## Current Status
+## 🔴 CURRENT SESSION STATUS (December 15, 2025)
+
+### ✅ Completed This Session
+1. **Fixed User ID Type Mismatch**
+   - Changed `User.id` from `UUID` to `String` to match Firebase Auth UID
+   - Updated all code references (`user.id.uuidString` → `user.id`)
+   - Fixed AuthenticationService to use Firebase UID directly
+   - Fixed profile username loading issue
+
+2. **Updated Firebase Storage Structure**
+   - Changed from flat structure to subdirectories:
+     - Profile images: `profileImages/{userId}/avatar.jpg`
+     - Post images: `postImages/{postId}/image.jpg`
+   - Updated StorageService.swift accordingly
+   - Published correct Storage security rules
+
+3. **Created Required Firestore Indexes**
+   - ✅ `followRequests`: Compound index (status, toUserId, createdAt) - **Enabled**
+   - ✅ `socialPosts`: Compound index (authorId, createdAt) - **Enabled**
+
+4. **Updated Firestore Security Rules**
+   - Published rules with `onlyUpdating()` helper function
+   - Added support for followers/following updates across users
+   - Added support for reactions/comments updates on posts
+   - Fixed mealPlans create vs read/update/delete rules
+
+5. **Manual Data Fixes**
+   - Manually updated following/followers arrays for both test accounts in Firestore
+
+### ❌ Still Broken (Stopping Point)
+1. **Firestore Permission Errors** - All queries failing with "Missing or insufficient permissions":
+   - `mealPlans` listener failing
+   - `followRequests` listener failing
+   - `socialPosts` listener failing
+
+2. **Reactions Not Working**
+   - Clicking emoji reactions does nothing
+   - No updates written to Firestore
+   - Console shows: `Write at socialPosts/{id} failed: Missing or insufficient permissions`
+
+3. **Comments Not Working**
+   - Adding comments doesn't work
+   - Same permission errors as reactions
+
+### 🔍 Next Steps to Debug (When Resuming)
+1. **Verify Authentication State**
+   - Check if user is actually signed in (Settings tab should show profile)
+   - Sign out and sign back in to refresh auth token
+   - Force-quit and relaunch app
+
+2. **Test Firestore Rules in Simulator**
+   - Firebase Console → Firestore → Rules → Simulator tab
+   - Test read operation on `socialPosts` collection
+   - Verify if rules allow authenticated reads
+   - Check for runtime errors in `onlyUpdating()` function
+
+3. **Compare Published vs Draft Rules**
+   - Ensure "Published" version matches what was intended
+   - Check for any discrepancies between tabs
+
+4. **Potential Root Causes to Investigate**
+   - Auth token might be expired/invalid
+   - Rules might have runtime errors (check Firebase Console logs)
+   - Mismatch between query structure and security rules
+   - Caching issue with rules propagation
+
+### 📝 Current Firestore Rules (What Should Be Published)
+```javascript
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function onlyUpdating(fields) {
+      return request.resource.data
+        .diff(resource.data)
+        .affectedKeys()
+        .hasOnly(fields);
+    }
+
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow update: if request.auth != null
+        && (request.auth.uid == userId
+            || onlyUpdating(['followers', 'following']));
+      allow delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    match /mealPlans/{planId} {
+      allow create: if request.auth != null
+        && request.auth.uid == request.resource.data.userId;
+      allow read, update, delete: if request.auth != null
+        && request.auth.uid == resource.data.userId;
+    }
+
+    match /socialPosts/{postId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+        && request.auth.uid == request.resource.data.authorId;
+      allow update: if request.auth != null
+        && (request.auth.uid == resource.data.authorId
+            || onlyUpdating(['reactions', 'comments']));
+      allow delete: if request.auth != null
+        && request.auth.uid == resource.data.authorId;
+    }
+
+    match /followRequests/{requestId} {
+      allow read: if request.auth != null
+        && (request.auth.uid == resource.data.fromUserId
+            || request.auth.uid == resource.data.toUserId);
+      allow create: if request.auth != null
+        && request.auth.uid == request.resource.data.fromUserId;
+      allow update: if request.auth != null
+        && request.auth.uid == resource.data.toUserId
+        && onlyUpdating(['status']);
+    }
+  }
+}
+```
+
+### 🧪 Test Accounts Created
+- **Account 1**: anushagarg@ucsb.edu (username: "anusha")
+  - Firebase UID: `3SAVDYw4Zad9tUi7FRYF8gfGh7t2`
+  - Has 2 posts in Firestore
+  - Manually set followers: `["sOB5sXBmoCTIwXwfK2LgJD9bNEE2"]`
+  - Manually set following: `["sOB5sXBmoCTIwXwfK2LgJD9bNEE2"]`
+
+- **Account 2**: anusha.modern@gmail.com (username: "agtest")
+  - Firebase UID: `sOB5sXBmoCTIwXwfK2LgJD9bNEE2`
+  - Has 1 post in Firestore
+  - Manually set followers: `["3SAVDYw4Zad9tUi7FRYF8gfGh7t2"]`
+  - Manually set following: `["3SAVDYw4Zad9tUi7FRYF8gfGh7t2"]`
+
+---
+
+## Previous Status (Before This Session)
 ✅ Firebase integration complete
 ✅ User management system implemented
 ✅ Follow system with requests working
