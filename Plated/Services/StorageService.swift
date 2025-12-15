@@ -20,7 +20,7 @@ class StorageService {
 
     func uploadProfileImage(_ imageData: Data, userId: String) async throws -> String {
         let storageRef = storage.reference()
-        let profileImageRef = storageRef.child("profileImages/\(userId).jpg")
+        let profileImageRef = storageRef.child("profileImages/\(userId)/avatar.jpg")
 
         // Upload image
         let metadata = StorageMetadata()
@@ -37,7 +37,7 @@ class StorageService {
 
     func uploadPostImage(_ imageData: Data, postId: String) async throws -> String {
         let storageRef = storage.reference()
-        let postImageRef = storageRef.child("postImages/\(postId).jpg")
+        let postImageRef = storageRef.child("postImages/\(postId)/image.jpg")
 
         // Upload image
         let metadata = StorageMetadata()

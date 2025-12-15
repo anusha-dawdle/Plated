@@ -22,7 +22,7 @@ struct ReactionBar: View {
     }
 
     private var currentUserReaction: String? {
-        reactions.first { $0.userId == currentUser.id.uuidString }?.emoji
+        reactions.first { $0.userId == currentUser.id }?.emoji
     }
 
     var body: some View {

@@ -11,13 +11,14 @@ struct ProfileView: View {
     @EnvironmentObject var dataService: FirebaseDataService
     @EnvironmentObject var authService: AuthenticationService
     @State private var showingSearch = false
+    @State private var selectedPost: SocialPost?
 
     private var currentUser: User? {
         authService.currentUser
     }
 
     private var myPosts: [SocialPost] {
-        guard let userId = currentUser?.id.uuidString else { return [] }
+        guard let userId = currentUser?.id else { return [] }
         return dataService.socialPosts.filter { $0.authorId == userId }
     }
 
@@ -39,7 +40,23 @@ struct ProfileView: View {
                         ScrollView {
                             LazyVStack(spacing: 16) {
                                 ForEach(myPosts) { post in
-                                    PostCard(post: post, currentUser: user)
+                                    PostCard(
+                                        post: post,
+                                        currentUser: user,
+                                        onReact: { emoji in
+                                            Task {
+                                                try? await dataService.addReaction(emoji: emoji, to: post)
+                                            }
+                                        },
+                                        onRemoveReaction: {
+                                            Task {
+                                                try? await dataService.removeReaction(from: post)
+                                            }
+                                        },
+                                        onShowComments: {
+                                            selectedPost = post
+                                        }
+                                    )
                                 }
                             }
                             .padding()
@@ -62,6 +79,20 @@ struct ProfileView: View {
             }
             .sheet(isPresented: $showingSearch) {
                 UserSearchView()
+            }
+            .sheet(item: $selectedPost) { post in
+                if let user = currentUser {
+                    CommentSheet(
+                        post: post,
+                        currentUser: user,
+                        onAddComment: { text in
+                            Task {
+                                try? await dataService.addComment(text, to: post, userName: user.name, userProfileImageUrl: user.profileImageUrl)
+                            }
+                        }
+                    )
+                    .environmentObject(dataService)
+                }
             }
         }
     }

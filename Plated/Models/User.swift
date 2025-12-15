@@ -8,7 +8,7 @@
 import Foundation
 
 struct User: Identifiable, Codable, Equatable {
-    let id: UUID
+    let id: String  // Firebase Auth UID
     var name: String
     var username: String
     var email: String
@@ -17,7 +17,7 @@ struct User: Identifiable, Codable, Equatable {
     var following: [String] // Array of user IDs
     var createdAt: Date
 
-    init(id: UUID = UUID(), name: String, username: String = "", email: String = "", profileImageUrl: String? = nil, followers: [String] = [], following: [String] = [], createdAt: Date = Date()) {
+    init(id: String = UUID().uuidString, name: String, username: String = "", email: String = "", profileImageUrl: String? = nil, followers: [String] = [], following: [String] = [], createdAt: Date = Date()) {
         self.id = id
         self.name = name
         self.username = username

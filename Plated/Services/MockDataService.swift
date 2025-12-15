@@ -40,7 +40,7 @@ class MockDataService: ObservableObject {
         if let existingPlan = mealPlans.first(where: { calendar.isDate($0.date, inSameDayAs: date) }) {
             return existingPlan
         }
-        let newPlan = MealPlan(userId: currentUser.id.uuidString, date: date, meals: [])
+        let newPlan = MealPlan(userId: currentUser.id, date: date, meals: [])
         mealPlans.append(newPlan)
         return newPlan
     }
@@ -50,7 +50,7 @@ class MockDataService: ObservableObject {
             mealPlans[index].meals.append(meal)
             mealPlans[index].updatedAt = Date()
         } else {
-            let newPlan = MealPlan(userId: currentUser.id.uuidString, date: date, meals: [meal])
+            let newPlan = MealPlan(userId: currentUser.id, date: date, meals: [meal])
             mealPlans.append(newPlan)
         }
     }
@@ -80,21 +80,21 @@ class MockDataService: ObservableObject {
         guard let index = socialPosts.firstIndex(where: { $0.id == post.id }) else { return }
 
         // Remove existing reaction from this user if any
-        socialPosts[index].reactions.removeAll { $0.userId == user.id.uuidString }
+        socialPosts[index].reactions.removeAll { $0.userId == user.id }
 
         // Add new reaction
-        let reaction = Reaction(userId: user.id.uuidString, emoji: emoji)
+        let reaction = Reaction(userId: user.id, emoji: emoji)
         socialPosts[index].reactions.append(reaction)
     }
 
     func removeReaction(from post: SocialPost, by user: User) {
         guard let index = socialPosts.firstIndex(where: { $0.id == post.id }) else { return }
-        socialPosts[index].reactions.removeAll { $0.userId == user.id.uuidString }
+        socialPosts[index].reactions.removeAll { $0.userId == user.id }
     }
 
     func addComment(_ text: String, to post: SocialPost, by user: User) {
         guard let index = socialPosts.firstIndex(where: { $0.id == post.id }) else { return }
-        let comment = Comment(userId: user.id.uuidString, userName: user.name, text: text)
+        let comment = Comment(userId: user.id, userName: user.name, text: text)
         socialPosts[index].comments.append(comment)
     }
 
@@ -112,7 +112,7 @@ class MockDataService: ObservableObject {
             MealItem(name: "Salmon with roasted vegetables", tags: [.dinner]),
             MealItem(name: "Apple slices with almond butter", tags: [.snack])
         ]
-        plans.append(MealPlan(userId: currentUser.id.uuidString, date: today, meals: todayMeals))
+        plans.append(MealPlan(userId: currentUser.id, date: today, meals: todayMeals))
 
         // Tomorrow's meals
         if let tomorrow = calendar.date(byAdding: .day, value: 1, to: today) {
@@ -121,7 +121,7 @@ class MockDataService: ObservableObject {
                 MealItem(name: "Turkey wrap", tags: [.lunch]),
                 MealItem(name: "Pasta primavera", tags: [.dinner])
             ]
-            plans.append(MealPlan(userId: currentUser.id.uuidString, date: tomorrow, meals: tomorrowMeals))
+            plans.append(MealPlan(userId: currentUser.id, date: tomorrow, meals: tomorrowMeals))
         }
 
         return plans
@@ -134,20 +134,20 @@ class MockDataService: ObservableObject {
         // Post 1: Recent post from Sarah
         if let twoDaysAgo = calendar.date(byAdding: .day, value: -2, to: Date()) {
             let post1 = SocialPost(
-                authorId: users[1].id.uuidString, // Sarah
+                authorId: users[1].id, // Sarah
                 authorName: users[1].name,
                 authorProfileImageUrl: users[1].profileImageUrl,
                 imageUrl: nil,
                 caption: "Homemade pizza night!",
                 mealTag: .dinner,
                 reactions: [
-                    Reaction(userId: currentUser.id.uuidString, emoji: "❤️"),
-                    Reaction(userId: users[2].id.uuidString, emoji: "😋"),
-                    Reaction(userId: users[3].id.uuidString, emoji: "🔥")
+                    Reaction(userId: currentUser.id, emoji: "❤️"),
+                    Reaction(userId: users[2].id, emoji: "😋"),
+                    Reaction(userId: users[3].id, emoji: "🔥")
                 ],
                 comments: [
-                    Comment(userId: currentUser.id.uuidString, userName: currentUser.name, text: "Looks delicious!"),
-                    Comment(userId: users[2].id.uuidString, userName: users[2].name, text: "Recipe please!")
+                    Comment(userId: currentUser.id, userName: currentUser.name, text: "Looks delicious!"),
+                    Comment(userId: users[2].id, userName: users[2].name, text: "Recipe please!")
                 ],
                 createdAt: twoDaysAgo
             )
@@ -157,18 +157,18 @@ class MockDataService: ObservableObject {
         // Post 2: Post from Mom
         if let threeDaysAgo = calendar.date(byAdding: .day, value: -3, to: Date()) {
             let post2 = SocialPost(
-                authorId: users[2].id.uuidString, // Mom
+                authorId: users[2].id, // Mom
                 authorName: users[2].name,
                 authorProfileImageUrl: users[2].profileImageUrl,
                 imageUrl: nil,
                 caption: "Sunday brunch with the family",
                 mealTag: .breakfast,
                 reactions: [
-                    Reaction(userId: currentUser.id.uuidString, emoji: "❤️"),
-                    Reaction(userId: users[1].id.uuidString, emoji: "👍")
+                    Reaction(userId: currentUser.id, emoji: "❤️"),
+                    Reaction(userId: users[1].id, emoji: "👍")
                 ],
                 comments: [
-                    Comment(userId: users[1].id.uuidString, userName: users[1].name, text: "Wish I was there!")
+                    Comment(userId: users[1].id, userName: users[1].name, text: "Wish I was there!")
                 ],
                 createdAt: threeDaysAgo
             )
@@ -178,14 +178,14 @@ class MockDataService: ObservableObject {
         // Post 3: Post from Alex
         if let fourDaysAgo = calendar.date(byAdding: .day, value: -4, to: Date()) {
             let post3 = SocialPost(
-                authorId: users[3].id.uuidString, // Alex
+                authorId: users[3].id, // Alex
                 authorName: users[3].name,
                 authorProfileImageUrl: users[3].profileImageUrl,
                 imageUrl: nil,
                 caption: "Quick lunch before the meeting",
                 mealTag: .lunch,
                 reactions: [
-                    Reaction(userId: users[4].id.uuidString, emoji: "👏")
+                    Reaction(userId: users[4].id, emoji: "👏")
                 ],
                 comments: [],
                 createdAt: fourDaysAgo
@@ -196,18 +196,18 @@ class MockDataService: ObservableObject {
         // Post 4: Post from Jamie
         if let fiveDaysAgo = calendar.date(byAdding: .day, value: -5, to: Date()) {
             let post4 = SocialPost(
-                authorId: users[4].id.uuidString, // Jamie
+                authorId: users[4].id, // Jamie
                 authorName: users[4].name,
                 authorProfileImageUrl: users[4].profileImageUrl,
                 imageUrl: nil,
                 caption: "Healthy snacking all day",
                 mealTag: .snack,
                 reactions: [
-                    Reaction(userId: currentUser.id.uuidString, emoji: "💪"),
-                    Reaction(userId: users[1].id.uuidString, emoji: "😋")
+                    Reaction(userId: currentUser.id, emoji: "💪"),
+                    Reaction(userId: users[1].id, emoji: "😋")
                 ],
                 comments: [
-                    Comment(userId: currentUser.id.uuidString, userName: currentUser.name, text: "Love it!")
+                    Comment(userId: currentUser.id, userName: currentUser.name, text: "Love it!")
                 ],
                 createdAt: fiveDaysAgo
             )

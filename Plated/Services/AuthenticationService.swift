@@ -21,6 +21,11 @@ class AuthenticationService: ObservableObject {
     private let auth = Auth.auth()
     private let db = Firestore.firestore()
 
+    // Public property to access current Firebase user ID
+    var currentFirebaseUserId: String? {
+        auth.currentUser?.uid
+    }
+
     init() {
         // Check if user is already signed in
         checkAuthState()
@@ -97,7 +102,7 @@ class AuthenticationService: ObservableObject {
                 // New user, create profile with temporary username
                 // User will need to set a proper username during profile setup
                 let newUser = User(
-                    id: UUID(uuidString: userId) ?? UUID(),
+                    id: userId,  // Use Firebase Auth UID directly
                     name: googleUser.profile?.name ?? "User",
                     username: "", // Will be set during profile setup
                     email: googleUser.profile?.email ?? "",
@@ -137,9 +142,11 @@ class AuthenticationService: ObservableObject {
             let snapshot = try await userRef.getDocument()
 
             if let data = snapshot.data() {
+                let username = data["username"] as? String ?? ""
                 let user = User(
-                    id: UUID(uuidString: userId) ?? UUID(),
+                    id: userId,  // Use Firebase Auth UID directly
                     name: data["name"] as? String ?? "User",
+                    username: username,
                     email: data["email"] as? String ?? "",
                     profileImageUrl: data["profileImageUrl"] as? String,
                     followers: data["followers"] as? [String] ?? [],
@@ -149,6 +156,11 @@ class AuthenticationService: ObservableObject {
 
                 self.currentUser = user
                 self.isAuthenticated = true
+
+                // Check if profile setup is incomplete (empty username)
+                if username.isEmpty {
+                    self.needsProfileSetup = true
+                }
             }
         } catch {
             authError = "Failed to fetch user profile: \(error.localizedDescription)"

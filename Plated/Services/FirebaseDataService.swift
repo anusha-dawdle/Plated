@@ -222,7 +222,7 @@ class FirebaseDataService: ObservableObject {
         // Check if request already exists
         let existingRequests = try await db.collection("followRequests")
             .whereField("fromUserId", isEqualTo: currentUser.uid)
-            .whereField("toUserId", isEqualTo: targetUser.id.uuidString)
+            .whereField("toUserId", isEqualTo: targetUser.id)
             .whereField("status", isEqualTo: FollowRequestStatus.pending.rawValue)
             .getDocuments()
 
@@ -235,7 +235,7 @@ class FirebaseDataService: ObservableObject {
             fromUserName: fromUser.name,
             fromUserUsername: fromUser.username,
             fromUserProfileImageUrl: fromUser.profileImageUrl,
-            toUserId: targetUser.id.uuidString
+            toUserId: targetUser.id
         )
 
         try db.collection("followRequests").document(request.id.uuidString).setData(from: request)

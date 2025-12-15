@@ -15,9 +15,10 @@ struct UserProfileView: View {
     let user: User
     @State private var followStatus: FollowStatus = .notFollowing
     @State private var isLoading = false
+    @State private var selectedPost: SocialPost?
 
     private var userPosts: [SocialPost] {
-        dataService.socialPosts.filter { $0.authorId == user.id.uuidString }
+        dataService.socialPosts.filter { $0.authorId == user.id }
     }
 
     var body: some View {
@@ -44,7 +45,23 @@ struct UserProfileView: View {
                     LazyVStack(spacing: 16) {
                         ForEach(userPosts) { post in
                             if let currentUser = authService.currentUser {
-                                PostCard(post: post, currentUser: currentUser)
+                                PostCard(
+                                    post: post,
+                                    currentUser: currentUser,
+                                    onReact: { emoji in
+                                        Task {
+                                            try? await dataService.addReaction(emoji: emoji, to: post)
+                                        }
+                                    },
+                                    onRemoveReaction: {
+                                        Task {
+                                            try? await dataService.removeReaction(from: post)
+                                        }
+                                    },
+                                    onShowComments: {
+                                        selectedPost = post
+                                    }
+                                )
                             }
                         }
                     }
@@ -56,6 +73,20 @@ struct UserProfileView: View {
         .navigationBarTitleDisplayMode(.inline)
         .task {
             await loadFollowStatus()
+        }
+        .sheet(item: $selectedPost) { post in
+            if let currentUser = authService.currentUser {
+                CommentSheet(
+                    post: post,
+                    currentUser: currentUser,
+                    onAddComment: { text in
+                        Task {
+                            try? await dataService.addComment(text, to: post, userName: currentUser.name, userProfileImageUrl: currentUser.profileImageUrl)
+                        }
+                    }
+                )
+                .environmentObject(dataService)
+            }
         }
     }
 
@@ -123,7 +154,7 @@ struct UserProfileView: View {
 
     private func loadFollowStatus() async {
         do {
-            followStatus = try await dataService.getFollowStatus(for: user.id.uuidString)
+            followStatus = try await dataService.getFollowStatus(for: user.id)
         } catch {
             print("Error loading follow status: \(error)")
         }
@@ -143,7 +174,7 @@ struct UserProfileView: View {
     private func unfollowUser() async {
         isLoading = true
         do {
-            try await dataService.unfollowUser(user.id.uuidString)
+            try await dataService.unfollowUser(user.id)
             followStatus = .notFollowing
         } catch {
             print("Error unfollowing user: \(error)")

@@ -119,14 +119,15 @@ struct CreatePostView: View {
 
     private func createPost() {
         guard let image = selectedImage,
-              let currentUser = authService.currentUser else { return }
+              let currentUser = authService.currentUser,
+              let firebaseUserId = authService.currentFirebaseUserId else { return }
 
         isUploading = true
 
         Task {
             do {
                 let post = SocialPost(
-                    authorId: currentUser.id.uuidString,
+                    authorId: firebaseUserId, // Use Firebase Auth UID, not UUID
                     authorName: currentUser.name,
                     authorProfileImageUrl: currentUser.profileImageUrl,
                     imageUrl: nil, // Will be set during upload
