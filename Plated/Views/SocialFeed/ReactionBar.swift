@@ -22,7 +22,7 @@ struct ReactionBar: View {
     }
 
     private var currentUserReaction: String? {
-        reactions.first { $0.user.id == currentUser.id }?.emoji
+        reactions.first { $0.userId == currentUser.id.uuidString }?.emoji
     }
 
     var body: some View {
@@ -76,11 +76,11 @@ struct ReactionBar: View {
     VStack {
         ReactionBar(
             reactions: [
-                Reaction(user: User(name: "Sarah"), emoji: "❤️"),
-                Reaction(user: User(name: "Mom"), emoji: "❤️"),
-                Reaction(user: User(name: "Alex"), emoji: "😋")
+                Reaction(userId: "1", emoji: "❤️"),
+                Reaction(userId: "2", emoji: "❤️"),
+                Reaction(userId: "3", emoji: "😋")
             ],
-            currentUser: User(name: "You"),
+            currentUser: User(name: "You", email: "you@example.com"),
             onReact: { _ in },
             onRemoveReaction: {}
         )

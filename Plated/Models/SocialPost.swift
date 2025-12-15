@@ -9,47 +9,55 @@ import Foundation
 
 struct SocialPost: Identifiable, Codable {
     let id: UUID
-    var author: User
-    var imageData: Data?
+    var authorId: String
+    var authorName: String // Denormalized for performance
+    var authorProfileImageUrl: String? // Denormalized for performance
+    var imageUrl: String?
     var caption: String
     var mealTag: MealTag
     var reactions: [Reaction]
     var comments: [Comment]
+    var isPublic: Bool
     var createdAt: Date
 
-    init(id: UUID = UUID(), author: User, imageData: Data? = nil, caption: String, mealTag: MealTag, reactions: [Reaction] = [], comments: [Comment] = [], createdAt: Date = Date()) {
+    init(id: UUID = UUID(), authorId: String, authorName: String, authorProfileImageUrl: String? = nil, imageUrl: String? = nil, caption: String, mealTag: MealTag, reactions: [Reaction] = [], comments: [Comment] = [], isPublic: Bool = true, createdAt: Date = Date()) {
         self.id = id
-        self.author = author
-        self.imageData = imageData
+        self.authorId = authorId
+        self.authorName = authorName
+        self.authorProfileImageUrl = authorProfileImageUrl
+        self.imageUrl = imageUrl
         self.caption = caption
         self.mealTag = mealTag
         self.reactions = reactions
         self.comments = comments
+        self.isPublic = isPublic
         self.createdAt = createdAt
     }
 }
 
 struct Reaction: Identifiable, Codable {
     let id: UUID
-    var user: User
+    var userId: String
     var emoji: String
 
-    init(id: UUID = UUID(), user: User, emoji: String) {
+    init(id: UUID = UUID(), userId: String, emoji: String) {
         self.id = id
-        self.user = user
+        self.userId = userId
         self.emoji = emoji
     }
 }
 
 struct Comment: Identifiable, Codable {
     let id: UUID
-    var user: User
+    var userId: String
+    var userName: String // Denormalized for performance
     var text: String
     var createdAt: Date
 
-    init(id: UUID = UUID(), user: User, text: String, createdAt: Date = Date()) {
+    init(id: UUID = UUID(), userId: String, userName: String, text: String, createdAt: Date = Date()) {
         self.id = id
-        self.user = user
+        self.userId = userId
+        self.userName = userName
         self.text = text
         self.createdAt = createdAt
     }

@@ -9,6 +9,7 @@ import SwiftUI
 
 struct CommentSheet: View {
     @Environment(\.dismiss) var dismiss
+    @EnvironmentObject var dataService: MockDataService
     let post: SocialPost
     let currentUser: User
     let onAddComment: (String) -> Void
@@ -16,16 +17,21 @@ struct CommentSheet: View {
     @State private var newCommentText = ""
     @FocusState private var isInputFocused: Bool
 
+    // Get the latest version of the post from dataService
+    private var latestPost: SocialPost {
+        dataService.socialPosts.first { $0.id == post.id } ?? post
+    }
+
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
                 // Comments list
-                if post.comments.isEmpty {
+                if latestPost.comments.isEmpty {
                     emptyState
                 } else {
                     ScrollView {
                         LazyVStack(alignment: .leading, spacing: 16) {
-                            ForEach(post.comments) { comment in
+                            ForEach(latestPost.comments) { comment in
                                 CommentRow(comment: comment)
                             }
                         }
@@ -97,7 +103,7 @@ struct CommentRow: View {
 
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 8) {
-                    Text(comment.user.name)
+                    Text(comment.userName)
                         .font(.subheadline.weight(.semibold))
 
                     Text(comment.createdAt, style: .relative)
@@ -117,15 +123,17 @@ struct CommentRow: View {
 #Preview {
     CommentSheet(
         post: SocialPost(
-            author: User(name: "Sarah"),
+            authorId: "1",
+            authorName: "Sarah",
             caption: "Delicious pasta!",
             mealTag: .dinner,
             comments: [
-                Comment(user: User(name: "You"), text: "Looks amazing!"),
-                Comment(user: User(name: "Mom"), text: "Recipe please!")
+                Comment(userId: "2", userName: "You", text: "Looks amazing!"),
+                Comment(userId: "3", userName: "Mom", text: "Recipe please!")
             ]
         ),
-        currentUser: User(name: "You"),
+        currentUser: User(name: "You", email: "you@example.com"),
         onAddComment: { _ in }
     )
+    .environmentObject(MockDataService())
 }

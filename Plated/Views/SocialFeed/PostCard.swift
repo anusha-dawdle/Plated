@@ -18,12 +18,22 @@ struct PostCard: View {
         VStack(alignment: .leading, spacing: 12) {
             // Header: Profile + Name
             HStack(spacing: 12) {
-                Image(systemName: post.author.profileImage ?? "person.circle.fill")
-                    .font(.title2)
-                    .foregroundStyle(.secondary)
+                if let profileImageUrl = post.authorProfileImageUrl {
+                    AsyncImage(url: URL(string: profileImageUrl)) { image in
+                        image.resizable().scaledToFill()
+                    } placeholder: {
+                        Image(systemName: "person.circle.fill")
+                    }
+                    .frame(width: 32, height: 32)
+                    .clipShape(Circle())
+                } else {
+                    Image(systemName: "person.circle.fill")
+                        .font(.title2)
+                        .foregroundStyle(.secondary)
+                }
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(post.author.name)
+                    Text(post.authorName)
                         .font(.subheadline.weight(.semibold))
 
                     Text(post.createdAt, style: .relative)
@@ -48,13 +58,33 @@ struct PostCard: View {
             .padding(.horizontal)
 
             // Food image
-            if let imageData = post.imageData, let uiImage = UIImage(data: imageData) {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 300)
-                    .clipped()
+            if let imageUrl = post.imageUrl {
+                AsyncImage(url: URL(string: imageUrl)) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .scaledToFill()
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 300)
+                            .clipped()
+                    case .failure(_), .empty:
+                        Rectangle()
+                            .fill(Color(.systemGray5))
+                            .frame(height: 300)
+                            .overlay {
+                                VStack(spacing: 8) {
+                                    Image(systemName: "photo")
+                                        .font(.system(size: 50))
+                                    Text("Loading...")
+                                        .font(.caption)
+                                }
+                                .foregroundStyle(.secondary)
+                            }
+                    @unknown default:
+                        EmptyView()
+                    }
+                }
             } else {
                 // Placeholder if no image
                 Rectangle()
@@ -114,19 +144,21 @@ struct PostCard: View {
     ScrollView {
         PostCard(
             post: SocialPost(
-                author: User(name: "Sarah", profileImageUrl: "person.circle.fill"),
-                imageData: nil,
+                authorId: "1",
+                authorName: "Sarah",
+                authorProfileImageUrl: "person.circle.fill",
+                imageUrl: nil,
                 caption: "Homemade pizza night!",
                 mealTag: .dinner,
                 reactions: [
-                    Reaction(user: User(name: "You"), emoji: "❤️"),
-                    Reaction(user: User(name: "Mom"), emoji: "😋")
+                    Reaction(userId: "2", emoji: "❤️"),
+                    Reaction(userId: "3", emoji: "😋")
                 ],
                 comments: [
-                    Comment(user: User(name: "You"), text: "Looks delicious!")
+                    Comment(userId: "2", userName: "You", text: "Looks delicious!")
                 ]
             ),
-            currentUser: User(name: "You"),
+            currentUser: User(name: "You", email: "you@example.com"),
             onReact: { _ in },
             onRemoveReaction: {},
             onShowComments: {}

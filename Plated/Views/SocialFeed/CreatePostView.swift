@@ -114,12 +114,13 @@ struct CreatePostView: View {
     private func createPost() {
         guard let image = selectedImage else { return }
 
-        // Compress image
-        let imageData = image.jpegData(compressionQuality: 0.7)
-
+        // Note: Image upload to Firebase Storage will be implemented in Phase 5
+        // For now, imageUrl is nil in mock data
         let post = SocialPost(
-            author: dataService.currentUser,
-            imageData: imageData,
+            authorId: dataService.currentUser.id.uuidString,
+            authorName: dataService.currentUser.name,
+            authorProfileImageUrl: dataService.currentUser.profileImageUrl,
+            imageUrl: nil, // Will be set after Firebase Storage upload in Phase 5
             caption: caption,
             mealTag: selectedTag
         )

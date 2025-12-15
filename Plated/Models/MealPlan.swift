@@ -9,13 +9,19 @@ import Foundation
 
 struct MealPlan: Identifiable, Codable {
     let id: UUID
+    var userId: String
     var date: Date
     var meals: [MealItem]
+    var createdAt: Date
+    var updatedAt: Date
 
-    init(id: UUID = UUID(), date: Date, meals: [MealItem] = []) {
+    init(id: UUID = UUID(), userId: String, date: Date, meals: [MealItem] = [], createdAt: Date = Date(), updatedAt: Date = Date()) {
         self.id = id
+        self.userId = userId
         self.date = date
         self.meals = meals
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
     }
 }
 

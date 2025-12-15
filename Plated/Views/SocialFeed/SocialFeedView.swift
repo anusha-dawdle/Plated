@@ -9,6 +9,7 @@ import SwiftUI
 
 struct SocialFeedView: View {
     @EnvironmentObject var dataService: MockDataService
+    @EnvironmentObject var authService: AuthenticationService
     @State private var showingCreatePost = false
     @State private var selectedPost: SocialPost?
 
@@ -23,12 +24,12 @@ struct SocialFeedView: View {
                             ForEach(dataService.socialPosts) { post in
                                 PostCard(
                                     post: post,
-                                    currentUser: dataService.currentUser,
+                                    currentUser: authService.currentUser ?? dataService.currentUser,
                                     onReact: { emoji in
-                                        dataService.addReaction(emoji: emoji, to: post, by: dataService.currentUser)
+                                        dataService.addReaction(emoji: emoji, to: post, by: authService.currentUser ?? dataService.currentUser)
                                     },
                                     onRemoveReaction: {
-                                        dataService.removeReaction(from: post, by: dataService.currentUser)
+                                        dataService.removeReaction(from: post, by: authService.currentUser ?? dataService.currentUser)
                                     },
                                     onShowComments: {
                                         selectedPost = post
@@ -56,13 +57,16 @@ struct SocialFeedView: View {
                 CreatePostView()
             }
             .sheet(item: $selectedPost) { post in
-                CommentSheet(
-                    post: post,
-                    currentUser: dataService.currentUser,
-                    onAddComment: { text in
-                        dataService.addComment(text, to: post, by: dataService.currentUser)
-                    }
-                )
+                if let currentUser = authService.currentUser {
+                    CommentSheet(
+                        post: post,
+                        currentUser: currentUser,
+                        onAddComment: { text in
+                            dataService.addComment(text, to: post, by: currentUser)
+                        }
+                    )
+                    .environmentObject(dataService)
+                }
             }
         }
     }
