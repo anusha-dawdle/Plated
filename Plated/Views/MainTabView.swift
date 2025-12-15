@@ -19,6 +19,11 @@ struct MainTabView: View {
                 .tabItem {
                     Label("Planner", systemImage: "checklist")
                 }
+
+            SettingsView()
+                .tabItem {
+                    Label("Settings", systemImage: "gearshape")
+                }
         }
     }
 }

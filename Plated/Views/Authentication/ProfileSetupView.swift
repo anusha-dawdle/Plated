@@ -103,13 +103,6 @@ struct ProfileSetupView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     .padding(.horizontal)
                     .disabled(displayName.isEmpty || isUploading)
-
-                    // Skip Button
-                    Button("Skip for now") {
-                        skipSetup()
-                    }
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
                     .padding(.bottom, 20)
                 }
             }
@@ -139,30 +132,16 @@ struct ProfileSetupView: View {
 
         Task {
             do {
-                // Upload profile image if one was selected
-                var imageUrl: String? = authService.currentUser?.profileImageUrl
-
-                if let profileImage,
-                   let imageData = profileImage.jpegData(compressionQuality: 0.7),
-                   let userId = authService.currentUser?.id.uuidString {
-                    imageUrl = try await StorageService.shared.uploadProfileImage(imageData, userId: userId)
-                }
-
-                // Update user profile
-                try await authService.updateProfile(name: displayName, profileImageUrl: imageUrl)
+                // Update user profile (handles image upload internally)
+                try await authService.updateProfile(name: displayName, profileImage: profileImage)
 
                 isUploading = false
-                dismiss()
             } catch {
                 isUploading = false
                 errorMessage = error.localizedDescription
                 showError = true
             }
         }
-    }
-
-    private func skipSetup() {
-        dismiss()
     }
 }
 

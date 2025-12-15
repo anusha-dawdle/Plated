@@ -15,5 +15,9 @@
 			</array>
 		</dict>
 	</array>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Plated needs access to your photo library to share meal photos with friends and family.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Plated needs access to your camera to take photos of your meals.</string>
 </dict>
 </plist>

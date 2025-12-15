@@ -20,12 +20,15 @@ struct PlatedApp: App {
 
     var body: some Scene {
         WindowGroup {
-            if authService.isAuthenticated {
-                MainTabView()
-                    .environmentObject(dataService)
+            if !authService.isAuthenticated {
+                SignInView()
+                    .environmentObject(authService)
+            } else if authService.needsProfileSetup {
+                ProfileSetupView()
                     .environmentObject(authService)
             } else {
-                SignInView()
+                MainTabView()
+                    .environmentObject(dataService)
                     .environmentObject(authService)
             }
         }

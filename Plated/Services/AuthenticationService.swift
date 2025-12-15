@@ -152,6 +152,42 @@ class AuthenticationService: ObservableObject {
         }
     }
 
+    func updateProfile(name: String, profileImage: UIImage?) async throws {
+        guard let userId = auth.currentUser?.uid else {
+            throw AuthError.noCurrentUser
+        }
+
+        let userRef = db.collection("users").document(userId)
+
+        do {
+            // Upload profile image if provided
+            var profileImageUrl: String? = currentUser?.profileImageUrl
+
+            if let image = profileImage,
+               let imageData = image.jpegData(compressionQuality: 0.7) {
+                profileImageUrl = try await StorageService.shared.uploadProfileImage(imageData, userId: userId)
+            }
+
+            // Update Firestore
+            try await userRef.updateData([
+                "name": name,
+                "profileImageUrl": profileImageUrl ?? ""
+            ])
+
+            // Update local state
+            if var updatedUser = currentUser {
+                updatedUser.name = name
+                updatedUser.profileImageUrl = profileImageUrl
+                self.currentUser = updatedUser
+            }
+
+            // Profile setup is complete
+            self.needsProfileSetup = false
+        } catch {
+            throw error
+        }
+    }
+
     // MARK: - Sign Out
 
     func signOut() throws {
@@ -160,6 +196,7 @@ class AuthenticationService: ObservableObject {
 
         currentUser = nil
         isAuthenticated = false
+        needsProfileSetup = false
     }
 }
 
@@ -169,6 +206,7 @@ enum AuthError: LocalizedError {
     case missingClientID
     case noRootViewController
     case missingIDToken
+    case noCurrentUser
 
     var errorDescription: String? {
         switch self {
@@ -178,6 +216,8 @@ enum AuthError: LocalizedError {
             return "Cannot find root view controller"
         case .missingIDToken:
             return "Missing Google ID token"
+        case .noCurrentUser:
+            return "No authenticated user found"
         }
     }
 }

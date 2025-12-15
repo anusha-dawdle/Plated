@@ -6,17 +6,19 @@
 //
 
 import SwiftUI
+import PhotosUI
 
 struct CreatePostView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var dataService: MockDataService
 
     @State private var selectedImage: UIImage?
+    @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var caption = ""
     @State private var selectedTag: MealTag = .breakfast
-    @State private var showingImagePicker = false
-    @State private var showingCamera = false
     @State private var showingSourceChoice = false
+    @State private var showingCamera = false
+    @State private var showingPhotoPicker = false
 
     var body: some View {
         NavigationStack {
@@ -90,15 +92,21 @@ struct CreatePostView: View {
                     showingCamera = true
                 }
                 Button("Photo Library") {
-                    showingImagePicker = true
+                    showingPhotoPicker = true
                 }
                 Button("Cancel", role: .cancel) {}
             }
-            .sheet(isPresented: $showingImagePicker) {
-                ImagePicker(image: $selectedImage, sourceType: .photoLibrary)
-            }
             .sheet(isPresented: $showingCamera) {
                 ImagePicker(image: $selectedImage, sourceType: .camera)
+            }
+            .photosPicker(isPresented: $showingPhotoPicker, selection: $selectedPhotoItem, matching: .images)
+            .onChange(of: selectedPhotoItem) { _, newValue in
+                Task {
+                    if let data = try? await newValue?.loadTransferable(type: Data.self),
+                       let uiImage = UIImage(data: data) {
+                        selectedImage = uiImage
+                    }
+                }
             }
         }
     }
